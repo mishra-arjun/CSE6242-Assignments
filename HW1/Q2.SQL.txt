@@ -1,0 +1,79 @@
+CREATE TABLE movies(movie_id integer, name text, genre text);
+CREATE TABLE ratings(user_id integer,movie_id integer,rating real,timestamp integer);
+.separator "%"
+.import movies.txt movies
+.import ratings.txt ratings
+.separator ","
+
+CREATE INDEX movie_primary_index ON movies(movie_id);
+CREATE INDEX movie_secondary_index ON ratings(movie_id);
+
+SELECT count (*) FROM (SELECT count(user_id) as reviewers, avg(rating) as avg_rating FROM ratings group by movie_id) WHERE reviewers >=500 and avg_rating >=3.5;
+SELECT null;
+
+SELECT movies.movie_id,name,reviews 
+FROM 
+(SELECT count(user_id) as reviews, movie_id FROM ratings group by movie_id) ratings_summary
+LEFT OUTER JOIN 
+movies
+on movies.movie_id=ratings_summary.movie_id
+WHERE reviews >=2500
+ORDER BY reviews desc,name asc;
+SELECT null;
+
+SELECT movies.movie_id,name,avg_rating 
+FROM 
+(SELECT avg(rating) as avg_rating, movie_id FROM ratings group by movie_id) ratings_summary
+LEFT OUTER JOIN 
+movies
+on movies.movie_id=ratings_summary.movie_id
+ORDER BY avg_rating desc,name asc
+limit 10;
+SELECT null;
+
+SELECT name,avg_rating,review_count,genre
+FROM 
+(SELECT count(user_id) as review_count,avg(rating) as avg_rating, movie_id FROM ratings group by movie_id) ratings_summary
+LEFT OUTER JOIN 
+movies
+on movies.movie_id=ratings_summary.movie_id
+WHERE review_count >=1000
+ORDER BY avg_rating desc,name asc,genre asc
+limit 8;
+SELECT null;
+
+CREATE VIEW common_interests as
+SELECT table_1.uid,table_2.uid,table_1.name FROM
+(SELECT uid,mid,name FROM
+(SELECT ratings.user_id as uid, ratings.movie_id as mid, review_count FROM
+(SELECT count(user_id) as review_count, movie_id FROM ratings group by movie_id having review_count = 10) as count_summary
+LEFT OUTER JOIN
+ratings
+on ratings.movie_id = count_summary.movie_id)
+LEFT OUTER JOIN
+movies
+on movies.movie_id = mid) table_1
+inner join
+(SELECT uid,mid,name FROM
+(SELECT ratings.user_id as uid, ratings.movie_id as mid, review_count FROM
+(SELECT count(user_id) as review_count, movie_id FROM ratings group by movie_id having review_count = 10) as count_summary
+LEFT OUTER JOIN
+ratings
+on ratings.movie_id = count_summary.movie_id)
+LEFT OUTER JOIN
+movies
+on movies.movie_id = mid) table_2
+WHERE table_1.mid = table_2.mid and table_1.uid <> table_2.uid and table_1.uid < table_2.uid
+ORDER BY table_1.uid,table_2.uid;
+
+SELECT count(*) FROM common_interests;
+SELECT null;
+
+create virtual table movie_overview using fts4(id integer, name text, year integer, overview text, popularity decimal);
+.separator ","
+.import movie-overview.txt movie_overview
+SELECT count(*) FROM movie_overview WHERE overview match 'death' or overview match 'life';
+SELECT null;
+
+SELECT id FROM movie_overview  WHERE id not in (SELECT id FROM movie_overview WHERE overview match  'life NEAR/5 about') and overview match  'life NEAR/999999 about';
+SELECT null;

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+
+</style>
+<body>
+<script src="../lib/d3.v3.min.js"></script>
+<script>
+
+
+d3.tsv("iris.tsv", function(error, iris) {
+  if (error) throw error;
+
+var margin = {top: 30, right: 30, bottom: 40, left: 50},
+    width = 700 - margin.left - margin.right,
+    height = 550 - margin.top - margin.bottom;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var color = d3.scale.category10(); //category10 is a 10 color scale
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var legend_width = 40
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right + legend_width)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//Coerce strings to numbers
+iris.forEach(function(d) {
+    d.sepalLength = +d.sepalLength;
+    d.sepalWidth = +d.sepalWidth;
+    d.petalWidth = +d.petalWidth;
+    d.petalWidth = +d.petalWidth
+  });
+
+//The extent returns the max and min value. Nice makes the the domain have round figure ends - like 7.9 max will become 8. 
+  x.domain(d3.extent(iris, function(d) { return d.sepalLength; })).nice();
+  y.domain(d3.extent(iris, function(d) { return d.sepalWidth; })).nice();
+
+
+//Creating the axes
+  svg.append("g") 
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Sepal Length (cm)");
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Sepal Width (cm)")
+
+  
+//Adding the datapoints
+  svg.selectAll("g")     //we could use selectAll(".dot") or  ("circle") or (".point")
+      .data(iris)
+      .enter()
+      .append("path")
+      .attr("d", d3.svg.symbol().type(function(d){
+            if (d.species == "setosa"){ return "circle";}
+            else if(d.species == "versicolor"){ return "square";}
+            else {return "triangle-down";}}).size(25))
+      .attr("transform", function(d) { return "translate(" + x(d.sepalLength) + "," + y(d.sepalWidth) + ")"; })
+      .style("fill", function(d) { return color(d.species); }); //The color variable is a scale in which we input values 
+  
+
+  var legend = svg.selectAll(".legend")
+      .data(color.domain())
+      .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(" + (width + 60) + "," + i * 20 + ")"; });
+
+  var shapes = ["circle", "square", "triangle-down"];
+
+  legend.append("path")
+        .attr("d", d3.svg.symbol().type( function(d, i) {return shapes[i];} ).size(25))
+        .style("fill", color);
+
+
+  legend.append("text")
+      .attr("x", 0 - 10)
+      .attr("y", 0)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
+
+
+//Second Graph
+
+
+var x2 = d3.scale.linear().range([0, width]);
+x2.domain(d3.extent(iris, function(d) { return d.petalLength; })).nice();
+
+var y2 = d3.scale.linear().range([height, 0]);
+y2.domain(d3.extent(iris, function(d) { return d.petalWidth; })).nice();
+
+var xAxis2 = d3.svg.axis().scale(x2).orient("bottom");
+
+var yAxis2 = d3.svg.axis().scale(y2).orient("left");
+
+
+var svg2 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right + 40)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+//Creating the axes
+  svg2.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis2)
+    .append("text")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Petal Length (cm)");
+
+  svg2.append("g")
+      .attr("class", "y axis")
+      .call(yAxis2)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Petal Width (cm)");
+
+  
+//Adding the datapoints
+  svg2.selectAll("g")     //we could use selectAll(".dot") or  ("circle") or (".point")
+      .data(iris)
+      .enter()
+      .append("path")
+      .attr("d", d3.svg.symbol().type(function(d){
+            if (d.species == "setosa"){ return "circle";}
+            else if(d.species == "versicolor"){ return "square";}
+            else {return "triangle-down";}}).size(25))
+      .attr("transform", function(d) { return "translate(" + x2(d.petalLength) + "," + y2(d.petalWidth) + ")"; })
+      .style("fill", function(d) { return color(d.species); }); //The color variable is a scale in which we input values 
+  
+
+  var legend2 = svg2.selectAll(".legend")
+      .data(color.domain())
+      .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(" + (width + 60) + "," + i * 20 + ")"; });
+
+  legend2.append("path")
+        .attr("d", d3.svg.symbol().type( function(d, i) {return shapes[i];} ).size(25))
+        .style("fill", color);
+
+  legend2.append("text")
+      .attr("x", 0 - 10)
+      .attr("y", 0)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
+
+
+//Third graph
+
+
+var x3 = d3.scale.linear().range([0, width]);
+x3.domain(d3.extent(iris, function(d) { return d.sepalLength; })).nice();
+
+var y3 = d3.scale.linear().range([height, 0]);
+y3.domain(d3.extent(iris, function(d) { return d.sepalWidth; })).nice();
+
+var xAxis3 = d3.svg.axis().scale(x3).orient("bottom");
+
+var yAxis3 = d3.svg.axis().scale(y3).orient("left");
+
+
+var svg3 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right + 40)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+//Creating the axes
+  svg3.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis3)
+    .append("text")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Petal Length (cm)");
+
+  svg3.append("g")
+      .attr("class", "y axis")
+      .call(yAxis3)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Petal Width (cm)");
+
+  
+//Adding the datapoints
+  svg3.selectAll("g")     //we could use selectAll(".dot") or  ("circle") or (".point")
+      .data(iris)
+      .enter()
+      .append("path")
+      .attr("d", d3.svg.symbol().type(function(d){
+            if (d.species == "setosa"){ return "circle";}
+            else if(d.species == "versicolor"){ return "square";}
+            else {return "triangle-down";}}).size(function(d){
+              return (d.sepalLength * d.sepalLength)
+            }))
+      .attr("transform", function(d) { return "translate(" + x3(d.sepalLength) + "," + y3(d.sepalWidth) + ")"; })
+      .style("fill", function(d) { return color(d.species); }); //The color variable is a scale in which we input values 
+  
+
+  var legend3 = svg3.selectAll(".legend")
+      .data(color.domain())
+      .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(" + (width + 60) + "," + i * 20 + ")"; });
+
+  legend3.append("path")
+        .attr("d", d3.svg.symbol().type( function(d, i) {return shapes[i];} ).size(25))
+        .style("fill", color);
+
+  legend3.append("text")
+      .attr("x", 0 - 10)
+      .attr("y", 0)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
+
+
+//Plot 4
+
+
+var x4 = d3.scale.log().range([0, width]);
+x4.domain(d3.extent(iris, function(d) { return d.sepalLength; })).nice();
+
+var y4 = d3.scale.log().range([height, 0]);
+y4.domain(d3.extent(iris, function(d) { return d.sepalWidth; })).nice();
+
+var xAxis4 = d3.svg.axis().scale(x4).orient("bottom");
+
+var yAxis4 = d3.svg.axis().scale(y4).orient("left");
+
+
+var svg4 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right + 40)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+//Creating the axes
+  svg4.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis4)
+    .append("text")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Petal Length (cm)");
+
+  svg4.append("g")
+      .attr("class", "y axis")
+      .call(yAxis4)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Petal Width (cm)");
+
+  
+//Adding the datapoints
+  svg4.selectAll("g")     //we could use selectAll(".dot") or  ("circle") or (".point")
+      .data(iris)
+      .enter()
+      .append("path")
+      .attr("d", d3.svg.symbol().type(function(d){
+            if (d.species == "setosa"){ return "circle";}
+            else if(d.species == "versicolor"){ return "square";}
+            else {return "triangle-down";}}).size(30))
+      .attr("transform", function(d) { return "translate(" + x4(d.sepalLength) + "," + y4(d.sepalWidth) + ")"; })
+      .style("fill", function(d) { return color(d.species); }); //The color variable is a scale in which we input values 
+  
+
+  var legend4 = svg4.selectAll(".legend")
+      .data(color.domain())
+      .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(" + (width + 60) + "," + i * 20 + ")"; });
+
+  legend4.append("path")
+        .attr("d", d3.svg.symbol().type( function(d, i) {return shapes[i];} ).size(25))
+        .style("fill", color);
+
+  legend4.append("text")
+      .attr("x", 0 - 10)
+      .attr("y", 0)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
+
+
+//Chart 5
+
+
+var x5 = d3.scale.sqrt().range([0, width]);
+x5.domain(d3.extent(iris, function(d) { return d.sepalLength; })).nice();
+
+var y5 = d3.scale.sqrt().range([height, 0]);
+y5.domain(d3.extent(iris, function(d) { return d.sepalWidth; })).nice();
+
+var xAxis5 = d3.svg.axis().scale(x5).orient("bottom");
+
+var yAxis5 = d3.svg.axis().scale(y5).orient("left");
+
+
+var svg5 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right + 40)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+//Creating the axes
+  svg5.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis5)
+    .append("text")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Petal Length (cm)");
+
+  svg5.append("g")
+      .attr("class", "y axis")
+      .call(yAxis5)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Petal Width (cm)");
+
+  
+//Adding the datapoints
+  svg5.selectAll("g")     //we could use selectAll(".dot") or  ("circle") or (".point")
+      .data(iris)
+      .enter()
+      .append("path")
+      .attr("d", d3.svg.symbol().type(function(d){
+            if (d.species == "setosa"){ return "circle";}
+            else if(d.species == "versicolor"){ return "square";}
+            else {return "triangle-down";}}).size(30))
+      .attr("transform", function(d) { return "translate(" + x5(d.sepalLength) + "," + y5(d.sepalWidth) + ")"; })
+      .style("fill", function(d) { return color(d.species); }); //The color variable is a scale in which we input values 
+  
+
+  var legend5 = svg5.selectAll(".legend")
+      .data(color.domain())
+      .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(" + (width + 60) + "," + i * 20 + ")"; });
+
+  legend5.append("path")
+        .attr("d", d3.svg.symbol().type( function(d, i) {return shapes[i];} ).size(25))
+        .style("fill", color);
+
+  legend5.append("text")
+      .attr("x", 0 - 10)
+      .attr("y", 0)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
+
+});
+
+</script>
+</body>
+</html>

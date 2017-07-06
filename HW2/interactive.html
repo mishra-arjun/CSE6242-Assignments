@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<style>
+
+/*Axis line was removed by removing the stroke*/ 
+.axis path,
+.axis line {
+  fill: none;   
+  shape-rendering: crispEdges;
+}
+
+.axis text { 
+font: 15px sans-serif;
+font-weight: bold;
+fill: grey;
+ }
+
+.bar rect {
+  fill: grey;
+}
+
+.bar text {
+  fill: white;
+  font: 18px sans-serif;
+  text-anchor: end;
+}
+
+</style>
+<body>
+<script src="../lib/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 30, right: 10, bottom: 10, left: 30},
+    width = 600 - margin.left - margin.right,
+    height = 450 - margin.top - margin.bottom;
+
+
+var x = d3.scale.linear().range([0, width]);
+
+var y = d3.scale.ordinal().rangeBands([0, height]);
+
+
+var yAxis = d3.svg.axis()
+    		.scale(y)
+    		.orient("left");
+
+var legend_width = 300
+
+var axis_width = 75
+
+var title_size = 20
+
+//Append SVG
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right + legend_width + axis_width)
+    .attr("height", height + margin.top + margin.bottom + title_size)
+    .append("g")
+    .attr("transform", "translate(" + (margin.left + axis_width) + "," + (margin.top + title_size) + ")");
+
+var data = [
+{product:'Product A',freq:{Q1:716, Q2:1287, Q3:249, Q4:324}}
+,{product:'Product B',freq:{Q1:2000, Q2:1876, Q3:3009, Q4:973}}
+,{product:'Product C',freq:{Q1:899, Q2:2333, Q3:418, Q4:213}}
+,{product:'Product D',freq:{Q1:989, Q2:1543, Q3:1862, Q4: 1111}}
+,{product:'Product E',freq:{Q1:4200, Q2:3220, Q3:948, Q4: 629}}
+,{product:'Product F',freq:{Q1:1321, Q2:156, Q3:212, Q4: 821}}
+,{product:'Product G',freq:{Q1:1977, Q2:247, Q3:1203, Q4: 562}}
+,{product:'Product H',freq:{Q1:2498, Q2:2852, Q3:942, Q4: 444}}
+]
+
+x.domain([0, d3.max(data, function(d) { return (d.freq.Q1 + d.freq.Q2 + d.freq.Q3 + d.freq.Q4); })]);
+y.domain(data.map(function(d){return d.product}));
+
+//Making the Y Axis
+svg.append("g").call(yAxis).attr("class", "y axis");
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "26px")
+        .style("font-weight", "bold") 
+        .text("Company FooBar: Revenue Generated for Year 2015");
+
+var padding = y.rangeBand()/4;
+
+var graph = svg.selectAll(".bar")//We need to define the attribute of this g also. As the class of svg is default otherwise
+   .data(data)
+   .enter()
+   .append("g")
+   .attr("class", "bar");
+   
+
+graph.append("rect")
+   .attr("class", "bar")
+   .attr("x", 0)
+   .attr("y", function(d){ return y(d.product)+5; }) //+5 to center it with the labels
+   .attr("width", function(d){ return x(d.freq.Q1 + d.freq.Q2 + d.freq.Q3 + d.freq.Q4); })
+   .attr("height", y.rangeBand() - padding)
+   .on("mouseout",function(d){
+                  d3.select(this).style("fill","grey");
+                  mouseout_legend();})
+   .on("mouseover",function(d){
+                  d3.select(this).style("fill","steelblue");
+                  mouseover_legend(d);
+                  });
+
+graph.append("text")
+     .attr("class", "bar")
+     .attr("x", function(d){return x(d.freq.Q1 + d.freq.Q2 + d.freq.Q3 + d.freq.Q4) - 10})
+     .attr("y", function(d) { return y(d.product) + 10 + (y.rangeBand() - padding)/2; })
+     .text(function(d) { return "$" + (d.freq.Q1 + d.freq.Q2 + d.freq.Q3 + d.freq.Q4); });
+
+//Call the initial legend
+mouseout_legend();
+
+
+function mouseout_legend(){
+  svg.selectAll("#legend").remove();
+var quarter_name = svg.selectAll("legend").data(['Q1','Q2','Q3','Q4'])
+              .enter().append("text").attr("id", "legend")
+              .attr("transform", function(d, i){return "translate(" + (width + axis_width + margin.left) + "," + ((margin.top + height*0.65) + (i * 30)) + ")" ;})
+              .attr("dy", ".35em")
+              .text(function(d){ return d;});
+
+//Preparing the intial data for creating the legend
+var quarter_revenue = {Q1: 0, Q2: 0, Q3: 0, Q4: 0};
+      
+      data.forEach(function(d){
+        quarter_revenue.Q1 = d.freq.Q1 + quarter_revenue.Q1;
+        quarter_revenue.Q2 = d.freq.Q2 + quarter_revenue.Q2;
+        quarter_revenue.Q3 = d.freq.Q3 + quarter_revenue.Q3;
+        quarter_revenue.Q4 = d.freq.Q4 + quarter_revenue.Q4;
+      })
+
+//Creating an array for the data
+var legend_data=[quarter_revenue.Q1, quarter_revenue.Q2, quarter_revenue.Q3, quarter_revenue.Q4];
+
+var percentages = []
+
+legend_data.forEach(function(d){
+  percentages.push(d3.round(d*100/(d3.sum(legend_data)), 2) + "%")
+})
+
+var rev = svg.selectAll("legend").data(legend_data).enter().append("text").attr("id", "legend")
+          .attr("transform", function(d, i){return "translate(" + (width + axis_width + margin.left + 50) + "," + ((margin.top + height*0.65) + (i * 30)) + ")" ;})
+          .attr("dy", ".35em").text(function(d){ return "$" + d;});
+
+
+var percent_legend = svg.selectAll("legend")
+          .data(percentages)
+          .enter()
+          .append('text')
+          .attr("id","legend")
+          .attr("transform", function(d, i){return "translate(" + (width + axis_width + margin.left + 130) + "," + ((margin.top + height*0.65) + (i * 30)) + ")" ;})
+          .attr("dy", ".35em")
+          .text(function(d){return d;})
+}
+
+
+//Create the dynamic legend
+
+function mouseover_legend(dataset){
+      svg.selectAll("#legend").remove();
+
+var quarter_name = svg.selectAll("legend").data(['Q1','Q2','Q3','Q4'])
+              .enter().append("text").attr("id", "legend")
+              .attr("transform", function(d, i){return "translate(" + (width + axis_width + margin.left) + "," + ((margin.top + height*0.65) + (i * 30)) + ")" ;})
+              .attr("dy", ".35em")
+              .text(function(d){ return d;});
+
+row_data = [dataset.freq.Q1, dataset.freq.Q2, dataset.freq.Q3, dataset.freq.Q4]
+
+var rev = svg.selectAll("legend").data(row_data)
+          .enter().append("text").attr("id", "legend")
+          .attr("transform", function(d, i){return "translate(" + (width + axis_width + margin.left + 50) + "," + ((margin.top + height*0.65) + (i * 30)) + ")" ;})
+          .attr("dy", ".35em").text(function(d){ return "$" + d;});
+
+var dy_percentages = [];
+      row_data.forEach(function(d){
+        dy_percentages.push(d3.round((d/d3.sum(row_data))*100, 2)+"%");
+      })
+
+var percent_legend = svg.selectAll("legend")
+          .data(dy_percentages)
+          .enter()
+          .append('text')
+          .attr("id","legend")
+          .attr("transform", function(d, i){return "translate(" + (width + axis_width + margin.left + 130) + "," + ((margin.top + height*0.65) + (i * 30)) + ")" ;})
+          .attr("dy", ".35em")
+          .text(function(d){return d;})
+
+}
+
+</script>
+</body>
+</html>

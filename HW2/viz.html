@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang = "en">
+<title>GRAND PRIX SANKEY</title>
+<style>
+
+.node rect {
+  cursor: move;
+  fill-opacity: .9;
+  shape-rendering: crispEdges;
+}
+
+.node text {
+  font: 11px sans-serif;
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff;
+}
+
+.link {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: .2;
+}
+
+.link:hover {
+  stroke-opacity: .5;
+}
+
+.d3-tip {
+  line-height: 0.5;
+  font: 10px sans-serif;
+  font-weight: bold;
+  padding: 3px;
+  background: rgba(0, 0, 100, 0.8);
+  color: #fff;
+  border-radius: 6px;
+}
+
+</style>
+<body>
+
+<script src="../lib/d3.v3.min.js"></script>
+<script src="../lib/sankey.js"></script>
+<script src="../lib/d3.tip.v0.6.3.js"></script>
+<script>
+
+//References: http://bl.ocks.org/d3noob/c2637e28b79fb3bfea13, http://www.d3noob.org/2013/02/formatting-data-for-sankey-diagrams-in.html, https://github.com/Caged/d3-tip
+
+var margin = {top: 30, right: 10, bottom: 10, left: 30},
+    width = 900 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+var color = d3.scale.category20b();
+
+//Create the tooltip
+var tip = d3.tip().attr('class', 'd3-tip')
+  				  .html(function(d) {return d.source.name + " - " + 
+                                     d.target.name + " - " + d.value + "points";});
+
+// append the svg canvas to the page
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", 
+          "translate(" + margin.left + "," + margin.top + ")");
+
+svg.call(tip);
+
+// Set the sankey diagram properties
+var sankey = d3.sankey()
+    .nodeWidth(30)
+    .nodePadding(8)
+    .size([width, height]);
+
+var sanklink = sankey.link();
+
+
+//Load the datasets
+d3.csv("races.csv", function(error, races) {
+	if (error) throw error;
+	d3.csv("teams.csv", function(error, teams){
+		if (error) throw error;
+
+var finaldata = {"nodes":[], "links":[]};
+
+//This will set the order of the nodes
+    races.forEach(function(d) { finaldata.nodes.push({"name": d.race});
+                                finaldata.nodes.push({"name": d.driver}); });
+
+    teams.forEach(function(d) { finaldata.nodes.push({"name": d.team}); });
+    
+
+    races.forEach(function(d) { finaldata.links.push({"source": d.race,
+													  "target": d.driver,
+													  "value": +d.points}); });
+
+    teams.forEach(function(d) { finaldata.links.push({"source": d.driver,
+													  "target": d.team,
+													  "value": +d.points}); });
+
+    finaldata.nodes = d3.keys(d3.nest()
+       .key(function (d) { return d.name; })
+       .map(finaldata.nodes));
+
+    finaldata.links.forEach(function (d, i) {
+       finaldata.links[i].source = finaldata.nodes.indexOf(finaldata.links[i].source);
+       finaldata.links[i].target = finaldata.nodes.indexOf(finaldata.links[i].target);
+     })
+
+    finaldata.nodes.forEach(function (d, i) {
+       finaldata.nodes[i] = { "name": d };
+     });
+
+
+sankey
+      .nodes(finaldata.nodes)
+      .links(finaldata.links)
+      .layout(64);
+
+// add in the links
+  var link = svg.append("g").selectAll(".link")
+      .data(finaldata.links)
+    .enter().append("path")
+      .attr("class", "link")
+      .attr("d", sanklink)  //This is where we input the shape of the element
+      .style("stroke-width", function(d) { return Math.max(1, d.dy); })
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide); //dy is set while creating the nodes in sankey.js. It is proportional to the value
+      //of that link.
+
+
+// add in the nodes
+  var node = svg.append("g").selectAll(".node")
+      .data(finaldata.nodes)
+    .enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) { 
+		  return "translate(" + d.x + "," + d.y + ")"; })
+    .call(d3.behavior.drag()
+      .origin(function(d) { return d; })
+      .on("dragstart", function() { 
+		  this.parentNode.appendChild(this); })
+      .on("drag", drag));
+
+
+// add the rectangles for the nodes
+  node.append("rect")
+      .attr("height", function(d) { return d.dy; })
+      .attr("width", sankey.nodeWidth())
+      .style("fill", function(d) { 
+		  return d.color = color(d.name); })
+      .style("stroke", d3.rgb("black").darker(2))
+      .style("stroke-width", 1.5)
+    .append("title")
+      .text(function(d) { 
+		  return d.name; });
+
+// add in the title for the nodes
+  node.append("text")
+      .attr("x", -6)
+      .attr("y", function(d) { return d.dy / 2; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", "end")
+      .attr("transform", null)
+      .text(function(d) { return d.name; })
+    .filter(function(d) { return d.x < width / 2; })
+      .attr("x", 6 + sankey.nodeWidth())
+      .attr("text-anchor", "start");
+
+// the function for moving the nodes
+  function drag(d) {
+    d3.select(this).attr("transform", 
+        "translate(" + d.x + "," + (
+                d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))
+            ) + ")");
+    sankey.relayout();
+    link.attr("d", sanklink);
+  }
+
+})});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+</style>
+<body>
+<script src="../lib/d3.v3.min.js"></script>
+<script>
+
+
+d3.json("final_data.json", function(error, college) {
+  if (error) throw error;
+
+var margin = {top: 30, right: 30, bottom: 40, left: 50},
+    width = 2000 - margin.left - margin.right,
+    height = 1750 - margin.top - margin.bottom;
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px")
+        .style("font-weight", "bold") 
+        .text("Hover over circles for details");
+
+low_sat = college.start
+mid_sat = college.middle
+high_sat = college.end
+
+
+var scale1 = d3.scale.linear().range([0, width]);
+
+var scale2 = d3.scale.linear().range([height, 0]);
+
+scale1.domain([0,d3.max(low_sat, function(d) { return d.ROI; })]);
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2) + 50)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px")
+        .style("font-weight", "bold") 
+        .text("Top 19 Colleges based on ROI Stats for SAT < 1000");
+
+
+var ROI_circles = svg.selectAll("circle")
+				    .data(low_sat)
+				    .enter()
+				    .append("g");
+
+var agg_pos = 0
+var prev_rad = 0
+
+	ROI_circles.append("circle")
+		.attr("cx", function(d, i) {
+			var pos = (scale1(d.ROI/14))
+			agg_pos = pos + agg_pos + prev_rad + 30
+			prev_rad = scale1(d.ROI/14)
+            return agg_pos;
+        })
+       .attr("cy", height/8)
+       .attr("r", function(d) {
+            return scale1(d.ROI/15);
+       }).style("fill", "steelblue")
+       .on("mouseout",function(d){
+                  d3.select(this).style("fill","steelblue");
+                  college_unhighlight();})
+   	   .on("mouseover",function(d){
+                  d3.select(this).style("fill","yellow").style("opacity", 0.8);
+                  college_highlight(d);
+                  });
+
+var agg_pos2 = 0
+var prev_rad2 = 0
+
+   	ROI_circles.append("text").attr("x", function(d, i) {
+			var pos2 = (scale1(d.ROI/14))
+			agg_pos2 = pos2 + agg_pos2 + prev_rad2 + 30
+			prev_rad2 = scale1(d.ROI/14)
+            return agg_pos2;
+        })
+       .attr("y", function(d){return scale1(d.ROI/100) + height/8}).style("fill", "black").attr("text-anchor", "middle")
+       .attr("font-size", function(d){return d.ROI + "px"})
+	   .text(function(d) { return d3.round(d.ROI, 2); } );
+
+
+
+function college_highlight(data){
+
+		svg.selectAll("textuals").data([data]).enter().append("text").attr("id", "textuals")
+    		   .attr("x", width/2)
+      		   .attr("y", 0 - (margin.top / 2) + 75)
+      		   .attr("dy", ".35em").attr("text-anchor", "middle")
+      		   .text(function(d){return "Your Selection: " + d.INSTNM + ", " + "Average Net Price: " + d.avg_net_price + " & " + "Median Earning: " + d.med_earning;})
+      		   .style("fill", "black")
+      		   .style("font", "15px sans-serif");
+}
+
+function college_unhighlight(){
+		svg.selectAll("#textuals").remove();
+}
+
+
+////////////////////////////////////////////////////////////////////Second line of Circles/////////////////////////////////////////////////////
+
+
+var scale3 = d3.scale.linear().range([0, width]);
+
+scale3.domain([0,1]);
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", height/4)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px")
+        .style("font-weight", "bold") 
+        .text("Top 19 Colleges based on % of Federal Loans Approved for SAT < 1000 (order by ROI)");
+
+
+var Loan_circles = svg.selectAll(".loancircle")
+				    .data(low_sat)
+				    .enter()
+				    .append("g");
+
+var agg_pos3 = 0
+var prev_rad3 = 0
+
+	Loan_circles.append("circle")
+		.attr("cx", function(d, i) {
+			var pos3 = (scale3(d.repayment_rate/40))
+			agg_pos3 = pos3 + agg_pos3 + prev_rad3 + 30
+			prev_rad3 = scale3(d.repayment_rate/40)
+            return agg_pos3;
+        })
+       .attr("cy", height/8 + height/4 - 100)
+       .attr("r", function(d) {
+            return scale3(d.repayment_rate/40);
+       }).style("fill", "steelblue")
+       .on("mouseout",function(d){
+                  d3.select(this).style("fill","steelblue");
+                  college_unhighlight2();})
+   	   .on("mouseover",function(d){
+                  d3.select(this).style("fill","yellow").style("opacity", 0.8);
+                  college_highlight2(d);
+                  });
+
+var agg_pos4 = 0
+var prev_rad4 = 0
+
+   	Loan_circles.append("text").attr("x", function(d, i) {
+			var pos4 = (scale3(d.repayment_rate/40))
+			agg_pos4 = pos4 + agg_pos4 + prev_rad4 + 30
+			prev_rad4 = scale3(d.repayment_rate/40)
+            return agg_pos4;
+        })
+       .attr("y", function(d){return scale3(d.repayment_rate/100) + height/8 + height/4 - 110}).style("fill", "black").attr("text-anchor", "middle")
+       .attr("font-size", function(d){return (d.repayment_rate * 20) + "px"})
+	   .text(function(d) { return d3.round(d.repayment_rate, 2); } );
+
+
+
+function college_highlight2(data){
+
+		svg.selectAll("textuals").data([data]).enter().append("text").attr("id", "textuals")
+    		   .attr("x", width/2)
+      		   .attr("y", height/4 + 25)
+      		   .attr("dy", ".35em").attr("text-anchor", "middle")
+      		   .text(function(d){return "Your Selection: " + d.INSTNM + ", " + "% of Federal Loans approved: " + d.PCTFLOAN + " & " + "Cumulative Median Debt: " + d.med_earning;})
+      		   .style("fill", "black")
+      		   .style("font", "15px sans-serif");
+}
+
+function college_unhighlight2(){
+		svg.selectAll("#textuals").remove();
+}
+
+
+
+////////////////////////////////////////////////////////////////////Third line of Circles/////////////////////////////////////////////////////
+
+var scale4 = d3.scale.linear().range([0, width]);
+
+scale4.domain([0,d3.max(mid_sat, function(d) { return d.ROI; })]);
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", height/4 + height/5 -100)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px")
+        .style("font-weight", "bold") 
+        .text("Top 19 Colleges based on ROI for 1000 < SAT < 1128");
+
+
+var mid_circles = svg.selectAll(".midcircle")
+				    .data(mid_sat)
+				    .enter()
+				    .append("g");
+
+var agg_pos5 = 0
+var prev_rad5 = 0
+
+	mid_circles.append("circle")
+		.attr("cx", function(d, i) {
+			var pos5 = (scale4(d.ROI/18))
+			agg_pos5 = pos5 + agg_pos5 + prev_rad5 + 30
+			prev_rad5 = scale4(d.ROI/18)
+            return agg_pos5;
+        })
+       .attr("cy", height/8 + height/4 - 200 + height/5)
+       .attr("r", function(d) {
+            return scale4(d.ROI/18);
+       }).style("fill", "steelblue")
+       .on("mouseout",function(d){
+                  d3.select(this).style("fill","steelblue");
+                  college_unhighlight3();})
+   	   .on("mouseover",function(d){
+                  d3.select(this).style("fill","yellow").style("opacity", 0.8);
+                  college_highlight3(d);
+                  });
+
+var agg_pos6 = 0
+var prev_rad6 = 0
+
+   	mid_circles.append("text").attr("x", function(d, i) {
+			var pos6 = (scale4(d.ROI/18))
+			agg_pos6 = pos6 + agg_pos6 + prev_rad6 + 30
+			prev_rad6 = scale4(d.ROI/18)
+            return agg_pos6;
+        })
+       .attr("y", function(d){return scale4(d.ROI/100) + height/8 + height/4 + height/5 - 200}).style("fill", "black").attr("text-anchor", "middle")
+       .attr("font-size", function(d){return (d.ROI + 5) + "px"})
+	   .text(function(d) { return d3.round(d.ROI, 2); } );
+
+
+
+function college_highlight3(data){
+
+		svg.selectAll("textuals").data([data]).enter().append("text").attr("id", "textuals")
+    		   .attr("x", width/2)
+      		   .attr("y", height/4 + height/5 - 75)
+      		   .attr("dy", ".35em").attr("text-anchor", "middle")
+      		   .text(function(d){return "Your Selection: " + d.INSTNM + ", " + "Average Net Price: " + d.avg_net_price + " & " + "Median Earning: " + d.med_earning;})
+      		   .style("fill", "black")
+      		   .style("font", "15px sans-serif");
+}
+
+function college_unhighlight3(){
+		svg.selectAll("#textuals").remove();
+}
+
+////////////////////////////////////////////////////////////////////Fourth line of Circles/////////////////////////////////////////////////////
+
+
+var scale5 = d3.scale.linear().range([0, width]);
+
+scale5.domain([0,d3.max(mid_sat, function(d) { return d.repayment_rate; })]);
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", height/4 + height*2/5 - 150)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px")
+        .style("font-weight", "bold") 
+        .text("Top 19 Colleges based on % of Federal Loans Approved for 1000 < SAT < 1128 (order by ROI)");
+
+
+var mid_rep = svg.selectAll(".midrep")
+				    .data(mid_sat)
+				    .enter()
+				    .append("g");
+
+var agg_pos7 = 0
+var prev_rad7 = 0
+
+	mid_rep.append("circle")
+		.attr("cx", function(d, i) {
+			var pos7 = (scale5(d.repayment_rate/50))
+			agg_pos7 = pos7 + agg_pos7+ prev_rad7 + 30
+			prev_rad7 = scale5(d.repayment_rate/50)
+            return agg_pos7;
+        })
+       .attr("cy", height/8 + height/4 - 250 + height*2/5)
+       .attr("r", function(d) {
+            return scale5(d.repayment_rate/50);
+       }).style("fill", "steelblue")
+       .on("mouseout",function(d){
+                  d3.select(this).style("fill","steelblue");
+                  college_unhighlight4();})
+   	   .on("mouseover",function(d){
+                  d3.select(this).style("fill","yellow").style("opacity", 0.8);
+                  college_highlight4(d);
+                  });
+
+var agg_pos8 = 0
+var prev_rad8 = 0
+
+   	mid_rep.append("text").attr("x", function(d, i) {
+			var pos8 = (scale5(d.repayment_rate/50))
+			agg_pos8 = pos8 + agg_pos8 + prev_rad8 + 30
+			prev_rad8 = scale5(d.repayment_rate/50)
+            return agg_pos8;
+        })
+       .attr("y", function(d){return scale5(d.repayment_rate/100) + height/8 + height/4 + height * 2/5 - 260}).style("fill", "black").attr("text-anchor", "middle")
+       .attr("font-size", function(d){return (d.repayment_rate + 15) + "px"})
+	   .text(function(d) { return d3.round(d.repayment_rate, 2); } );
+
+
+
+function college_highlight4(data){
+
+		svg.selectAll("textuals").data([data]).enter().append("text").attr("id", "textuals")
+    		   .attr("x", width/2)
+      		   .attr("y", height/4 + height * 2/5 - 125)
+      		   .attr("dy", ".35em").attr("text-anchor", "middle")
+      		   .text(function(d){return "Your Selection: " + d.INSTNM + ", " + "% of Federal Loans approved: " + d.PCTFLOAN + " & " + "Cumulative Median Debt: " + d.med_earning;})
+      		   .style("fill", "black")
+      		   .style("font", "15px sans-serif");
+}
+
+function college_unhighlight4(){
+		svg.selectAll("#textuals").remove();
+}
+
+
+////////////////////////////////////////////////////////////////////Fifth line of Circles/////////////////////////////////////////////////////
+
+var scale6 = d3.scale.linear().range([0, width]);
+
+scale6.domain([0,d3.max(high_sat, function(d) { return d.ROI; })]);
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", height/4 + height*3/5 -200)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px")
+        .style("font-weight", "bold") 
+        .text("Top 19 Colleges based on ROI for SAT > 1128");
+
+
+var end_circles = svg.selectAll(".endcircle")
+				    .data(high_sat)
+				    .enter()
+				    .append("g");
+
+var agg_pos9 = 0
+var prev_rad9 = 0
+
+	end_circles.append("circle")
+		.attr("cx", function(d, i) {
+			var pos9 = (scale6(d.ROI/27))
+			agg_pos9 = pos9 + agg_pos9 + prev_rad9 + 30
+			prev_rad9 = scale6(d.ROI/27)
+            return agg_pos9;
+        })
+       .attr("cy", height/8 + height/4 - 300 + height*3/5)
+       .attr("r", function(d) {
+            return scale6(d.ROI/27);
+       }).style("fill", "steelblue")
+       .on("mouseout",function(d){
+                  d3.select(this).style("fill","steelblue");
+                  college_unhighlight5();})
+   	   .on("mouseover",function(d){
+                  d3.select(this).style("fill","yellow").style("opacity", 0.8);
+                  college_highlight5(d);
+                  });
+
+var agg_pos10 = 0
+var prev_rad10 = 0
+
+   	end_circles.append("text").attr("x", function(d, i) {
+			var pos10 = (scale6(d.ROI/27))
+			agg_pos10 = pos10 + agg_pos10 + prev_rad10 + 30
+			prev_rad10 = scale6(d.ROI/27)
+            return agg_pos10;
+        })
+       .attr("y", function(d){return scale6(d.ROI/100) + height/8 + height/4 + height*3/5 - 300}).style("fill", "black").attr("text-anchor", "middle")
+       .attr("font-size", function(d){return (d.ROI + 15) + "px"})
+	   .text(function(d) { return d3.round(d.ROI, 2); } );
+
+
+
+function college_highlight5(data){
+
+		svg.selectAll("textuals").data([data]).enter().append("text").attr("id", "textuals")
+    		   .attr("x", width/2)
+      		   .attr("y", height/4 + height*3/5 - 175)
+      		   .attr("dy", ".35em").attr("text-anchor", "middle")
+      		   .text(function(d){return "Your Selection: " + d.INSTNM + ", " + "Average Net Price: " + d.avg_net_price + " & " + "Median Earning: " + d.med_earning;})
+      		   .style("fill", "black")
+      		   .style("font", "15px sans-serif");
+}
+
+function college_unhighlight5(){
+		svg.selectAll("#textuals").remove();
+}
+
+////////////////////////////////////////////////////////////////////Sixth line of Circles/////////////////////////////////////////////////////
+
+
+var scale7 = d3.scale.linear().range([0, width]);
+
+scale7.domain([0,d3.max(high_sat, function(d) { return d.repayment_rate; })]);
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", height/4 + height*4/5 - 250)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "18px")
+        .style("font-weight", "bold") 
+        .text("Top 19 Colleges based on % of Federal Loans Approved for SAT > 1128 (order by ROI)");
+
+
+var end_rep = svg.selectAll(".endrep")
+				    .data(high_sat)
+				    .enter()
+				    .append("g");
+
+var agg_pos11 = 0
+var prev_rad11 = 0
+
+	end_rep.append("circle")
+		.attr("cx", function(d, i) {
+			var pos11 = (scale7(d.repayment_rate/50))
+			agg_pos11 = pos11 + agg_pos11+ prev_rad11 + 30
+			prev_rad11 = scale7(d.repayment_rate/50)
+            return agg_pos11;
+        })
+       .attr("cy", height/8 + height/4 - 350 + height*4/5)
+       .attr("r", function(d) {
+            return scale7(d.repayment_rate/50);
+       }).style("fill", "steelblue")
+       .on("mouseout",function(d){
+                  d3.select(this).style("fill","steelblue");
+                  college_unhighlight6();})
+   	   .on("mouseover",function(d){
+                  d3.select(this).style("fill","yellow").style("opacity", 0.8);
+                  college_highlight6(d);
+                  });
+
+var agg_pos12 = 0
+var prev_rad12 = 0
+
+   	end_rep.append("text").attr("x", function(d, i) {
+			var pos12 = (scale7(d.repayment_rate/50))
+			agg_pos12 = pos12 + agg_pos12 + prev_rad12 + 30
+			prev_rad12 = scale7(d.repayment_rate/50)
+            return agg_pos12;
+        })
+       .attr("y", function(d){return scale7(d.repayment_rate/100) + height/8 + height/4 + height * 4/5 - 360}).style("fill", "black").attr("text-anchor", "middle")
+       .attr("font-size", function(d){return (d.repayment_rate + 15) + "px"})
+	   .text(function(d) { return d3.round(d.repayment_rate, 2); } );
+
+
+
+function college_highlight6(data){
+
+		svg.selectAll("textuals").data([data]).enter().append("text").attr("id", "textuals")
+    		   .attr("x", width/2)
+      		   .attr("y", height/4 + height * 4/5 - 225)
+      		   .attr("dy", ".35em").attr("text-anchor", "middle")
+      		   .text(function(d){return "Your Selection: " + d.INSTNM + ", " + "% of Federal Loans approved: " + d.PCTFLOAN + " & " + "Cumulative Median Debt: " + d.med_earning;})
+      		   .style("fill", "black")
+      		   .style("font", "15px sans-serif");
+}
+
+function college_unhighlight6(){
+		svg.selectAll("#textuals").remove();
+}
+   });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+bigrams = LOAD 's3://cse6242-2016fall-bigrams-big/*' AS (bigram:chararray, year:chararray, count:int, books:int);
+bigrams_sub = FILTER bigrams BY count >= 50;
+bigrams_grp = GROUP bigrams_sub by bigram;
+result = foreach bigrams_grp {
+			sum_count = SUM(bigrams_sub.count);
+			sum_books = SUM(bigrams_sub.books);
+			sub = bigrams_sub.bigram;
+			uniq_bigrams = DISTINCT sub;
+			generate uniq_bigrams, (double)sum_count/(double)sum_books AS Avg_Appear; };
+
+result_order = ORDER result BY Avg_Appear DESC, uniq_bigrams;
+top = LIMIT result_order 10;
+top_new = FOREACH top GENERATE flatten(uniq_bigrams), Avg_Appear;
+STORE top_new INTO 's3://cse6242-amishra85/output10/' using PigStorage('\t');

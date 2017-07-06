@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+</style>
+<body>
+<script src="../lib/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 20, right: 90, bottom: 30, left: 50},
+    width = 950 - margin.left - margin.right,
+    height = 600*2 - margin.top - margin.bottom;
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom + 300)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+d3.json("hourly_heatmap.json", function(glucose) {
+
+var xscale = d3.scale.linear().range([0, width]),
+    yscale = d3.scale.linear().range([height/2, 0]),
+    zscale = d3.scale.linear().range(["white", "red"]);
+
+var max_gluc = 0;
+var min_gluc = 300;
+
+for(i = 0; i < glucose.length; i++){
+		max_gluc_new = d3.max(glucose[i].values);
+		max_gluc_array = [max_gluc_new, max_gluc];
+		max_gluc = d3.max(max_gluc_array);
+}
+
+
+for(i = 0; i < glucose.length; i++){
+		min_gluc_new = d3.min(glucose[i].values);
+		min_gluc_array = [min_gluc_new, min_gluc];
+		min_gluc = d3.min(min_gluc_array);
+}
+
+  // Compute the scale domains.
+  xscale.domain([0, 24]);
+  yscale.domain(d3.extent(glucose, function(d) { return d.key; }));
+  zscale.domain([min_gluc, max_gluc]);
+
+
+var xAxis = d3.svg.axis()
+    .scale(xscale)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(yscale)
+    .orient("left");
+
+//Creating the axes
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height/2 + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("y", 30)
+      .attr("x", 350)
+      .text("Hour");
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -210)
+      .attr("y", -40)
+      .attr("dy", ".71em")
+      .text("Key");
+
+var xstep = 1;
+var ystep = 10;
+
+var hour = []
+
+for(j = 0; j <glucose.length; j++){
+	for(i = 0; i < glucose[j].values.length; i++){	
+		hour.push(i);
+}};
+
+
+var values = []
+for(j = 0; j <glucose.length; j++){
+	for(i = 0; i < glucose[j].values.length; i++){
+		values.push(glucose[j].values[i]);
+}};
+
+
+var keys = []
+for(j = 0; j <glucose.length; j++){
+	for(i = 0; i < glucose[j].values.length; i++){	
+		keys.push(glucose[j].key);
+}};
+
+new_glucose = []
+
+for(i = 0; i < keys.length; i++){
+	triple_object = {"hours": hour[i], "key": keys[i], "val": values[i]}
+	new_glucose.push(triple_object)
+}
+
+
+  //Making the graph
+
+  svg.selectAll(".heatmap")      //Could be .tile and append rect and attr("class", "tile")
+      .data(new_glucose)
+    .enter().append("svg:rect")
+      .attr("x", function(d) {return xscale(d.hours);})
+      .attr("y", function(d) {return yscale(d.key + ystep);})
+      .attr("width", xscale(xstep) - xscale(0))
+      .attr("height",  yscale(0) - yscale(ystep))
+      .style("fill", function(d) {return zscale(d.val);});
+
+
+  var legend = svg.selectAll(".legend")
+      .data(zscale.ticks(6).slice(1).reverse())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(" + (width + 20) + "," + (20 + i * 20) + ")"; });
+
+  legend.append("rect")
+      .attr("width", 20)
+      .attr("height", 20)
+      .style("fill", zscale);
+
+  legend.append("text")
+      .attr("x", 26)
+      .attr("y", 10)
+      .attr("dy", ".35em")
+      .text(String);
+
+  svg.append("text")
+      .attr("class", "label")
+      .attr("x", width + 20)
+      .attr("y", 10)
+      .attr("dy", ".35em")
+      .text("Glucose Level");
+
+});
+
+
+
+ //Second Heatmap
+
+
+ d3.json("day_heatmap.json", function(glucose1) {
+
+var days = ["0", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+var xscale1 = d3.scale.ordinal().domain(days.map(function(d){return d})).rangePoints([0, width]), //the array.map function is used here. rangeBands and rangePoints are almost the same with some functionality differences
+    yscale1 = d3.scale.linear().range([height/2, 0]),
+    zscale1 = d3.scale.linear().range(["white", "red"]);
+
+var max_gluc1 = 0; //0 is a random value
+var min_gluc1 = 300;  //300 is a random value
+
+for(i = 0; i < glucose1.length; i++){
+            max_gluc_new1 = d3.max(glucose1[i].values);
+            max_gluc_array1 = [max_gluc_new1, max_gluc1];
+            max_gluc1 = d3.max(max_gluc_array1);
+}
+
+
+for(i = 0; i < glucose1.length; i++){
+            min_gluc_new1 = d3.min(glucose1[i].values);
+            min_gluc_array1 = [min_gluc_new1, min_gluc1];
+            min_gluc1 = d3.min(min_gluc_array1);
+}
+
+  // Compute the scale domains.
+  yscale1.domain(d3.extent(glucose1, function(d) { return d.key; }));
+  zscale1.domain([min_gluc1, max_gluc1]);
+
+
+var xAxis1 = d3.svg.axis()
+    .scale(xscale1)
+    .orient("bottom").ticks(6);
+
+var yAxis1 = d3.svg.axis()
+    .scale(yscale1)
+    .orient("left");
+
+//Creating the axes
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + (height+200) + ")")
+      .call(xAxis1)
+    .append("text")
+      .attr("y", 30)
+      .attr("x", 350)
+      .attr("class", "label")
+      .text("Day");
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(0," + (height/2 + 200) + ")")
+      .call(yAxis1)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -210)
+      .attr("y", -40)
+      .attr("dy", ".71em")
+      .attr("class", "label")
+      .text("Key");
+
+var xstep1 = "Monday"; //We used "Tuesday" as thats the band after 0 (Monday) so  = width. We could use xscale.rangeBand()
+var ystep1 = 10;
+
+var day = []
+
+for(j = 0; j <glucose1.length; j++){
+      for(i = 1; i < glucose1[j].values.length + 1; i++){
+      if(i == 1){ day.push("Monday"); }
+      else if(i == 2){ day.push("Tuesday"); } else if(i == 3){ day.push("Wednesday"); } else if(i == 4){ day.push("Thursday"); }
+      else if(i == 5){ day.push("Friday"); } else if(i == 6){ day.push("Saturday"); } else { day.push("Sunday");}
+}};
+
+
+var values1 = []
+for(j = 0; j <glucose1.length; j++){
+      for(i = 0; i < glucose1[j].values.length; i++){
+            values1.push(glucose1[j].values[i]);
+}};
+
+
+var keys1 = []
+for(j = 0; j <glucose1.length; j++){
+      for(i = 0; i < glucose1[j].values.length; i++){  
+            keys1.push(glucose1[j].key);
+}};
+
+new_glucose1 = []
+
+for(i = 0; i < keys1.length; i++){
+      triple_object1 = {"days": day[i], "key": keys1[i], "val": values1[i]}
+      new_glucose1.push(triple_object1)
+}
+
+
+  //Making the graph
+
+  svg.selectAll(".heatmap1")    //Properties of heatmap could be defined in CSS.
+      .data(new_glucose1)
+    .enter().append("svg:rect")
+      .attr("x", function(d) {return xscale1(d.days) - xscale1(xstep1);})
+      .attr("y", function(d) {return yscale1(d.key + ystep1) + height/2 + 200;})
+      .attr("width", xscale1(xstep1))
+      .attr("height",  yscale1(0) - yscale1(ystep1))
+      .style("fill", function(d) {return zscale1(d.val);});
+
+
+  var legend1 = svg.selectAll(".legend1")
+      .data(zscale1.ticks(6).slice(1).reverse())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(" + (width + 20) + "," + (20 + i * 20 + height/2 + 200) + ")"; });
+
+  legend1.append("rect")
+      .attr("width", 20)
+      .attr("height", 20)
+      .style("fill", zscale1);
+
+  legend1.append("text")
+      .attr("x", 26)
+      .attr("y", 10)
+      .attr("dy", ".35em")
+      .text(String);
+
+  svg.append("text")
+      .attr("class", "label")
+      .attr("x", width + 20)
+      .attr("y", 10 + height/2 + 200)
+      .attr("dy", ".35em")
+      .text("Glucose Level");
+
+});
+
+</script>
+</body>
+</html>
